@@ -16,46 +16,37 @@
 
 package io.tidb.bigdata.flink.tidb;
 
-import static io.tidb.bigdata.tidb.ClientConfig.DATABASE_URL;
-import static io.tidb.bigdata.tidb.ClientConfig.MAX_POOL_SIZE;
-import static io.tidb.bigdata.tidb.ClientConfig.MIN_IDLE_SIZE;
-import static io.tidb.bigdata.tidb.ClientConfig.PASSWORD;
-import static io.tidb.bigdata.tidb.ClientConfig.TIDB_FILTER_PUSH_DOWN;
-import static io.tidb.bigdata.tidb.ClientConfig.TIDB_REPLICA_READ;
-import static io.tidb.bigdata.tidb.ClientConfig.TIDB_WRITE_MODE;
-import static io.tidb.bigdata.tidb.ClientConfig.USERNAME;
-import static org.apache.flink.table.descriptors.CatalogDescriptorValidator.CATALOG_PROPERTY_VERSION;
-import static org.apache.flink.table.descriptors.CatalogDescriptorValidator.CATALOG_TYPE;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.flink.table.factories.CatalogFactory;
 import java.util.List;
 import java.util.Map;
-import org.apache.flink.table.factories.CatalogFactory;
+
+import static io.tidb.bigdata.tidb.ClientConfig.*;
 
 public abstract class TiDBBaseCatalogFactory implements CatalogFactory {
-
-  public static final String CATALOG_TYPE_VALUE_TIDB = "tidb";
-
-  @Override
-  public Map<String, String> requiredContext() {
-    return ImmutableMap.of(
-        CATALOG_TYPE, CATALOG_TYPE_VALUE_TIDB,
-        CATALOG_PROPERTY_VERSION, "1"
-    );
-  }
-
-  @Override
-  public List<String> supportedProperties() {
-    return ImmutableList.of(
-        USERNAME,
-        PASSWORD,
-        DATABASE_URL,
-        MAX_POOL_SIZE,
-        MIN_IDLE_SIZE,
-        TIDB_WRITE_MODE,
-        TIDB_REPLICA_READ,
-        TIDB_FILTER_PUSH_DOWN
-    );
-  }
+    
+    public static final String CATALOG_TYPE_VALUE_TIDB = "tidb";
+    
+    @Override
+    public Map<String, String> requiredContext() {
+        return ImmutableMap.of(
+                "default-database", CATALOG_TYPE_VALUE_TIDB,
+                "property-version", "1"
+        );
+    }
+    
+    @Override
+    public List<String> supportedProperties() {
+        return ImmutableList.of(
+                USERNAME,
+                PASSWORD,
+                DATABASE_URL,
+                MAX_POOL_SIZE,
+                MIN_IDLE_SIZE,
+                TIDB_WRITE_MODE,
+                TIDB_REPLICA_READ,
+                TIDB_FILTER_PUSH_DOWN
+        );
+    }
 }
