@@ -14,7 +14,7 @@
   <url>https://github.com/pingcap-incubator/TiBigData</url>
 
   <properties>
-        <dep.flink.version>1.13.0</dep.flink.version>
+    <dep.flink.version>1.11.0</dep.flink.version>
   </properties>
 
   <dependencies>
@@ -22,6 +22,12 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>bigdata-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- TiCDC parser -->
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>ticdc</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- jackson -->

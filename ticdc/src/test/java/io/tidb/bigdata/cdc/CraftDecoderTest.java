@@ -25,10 +25,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class CraftDecoderTest {
-  private static final Codec CODEC = Codec.craft();
 
   private static long verifyResolved(final String fileName, long lastTs) throws IOException {
-    final EventDecoder decoder = decode(CODEC, fileName);
+    final EventDecoder decoder = decode("craft", fileName);
     for (Event evt : decoder) {
       Assert.assertEquals(evt.getType(), Type.RESOLVED);
       Assert.assertTrue(evt.getTs() >= lastTs);
@@ -42,13 +41,13 @@ public class CraftDecoderTest {
   private static long verifyRowChange(final String fileName, long lastTs,
       final Expect.RowChange[] expected)
       throws IOException {
-    final EventDecoder decoder = decode(CODEC, fileName);
+    final EventDecoder decoder = decode("craft", fileName);
     int idx = 0;
     for (Event evt : decoder) {
+      final Expect.RowChange row = expected[idx++];
       Assert.assertEquals(evt.getType(), Type.ROW_CHANGED);
       Assert.assertTrue(evt.getTs() >= lastTs);
       lastTs = evt.getTs();
-      idx++;
     }
     Assert.assertEquals(idx, expected.length);
     return lastTs;
@@ -56,16 +55,16 @@ public class CraftDecoderTest {
 
   private static long verifyDDL(final String fileName, long lastTs, final Expect.DDL[] expected)
       throws IOException {
-    final EventDecoder decoder = decode(CODEC, fileName);
+    final EventDecoder decoder = decode("craft", fileName);
     int idx = 0;
     for (Event evt : decoder) {
       final Expect.DDL ddl = expected[idx++];
       Assert.assertEquals(evt.getType(), Type.DDL);
       Assert.assertTrue(evt.getTs() >= lastTs);
-      Assert.assertEquals(evt.asDDL().getType(), ddl.type);
+      Assert.assertEquals(evt.asDdl().getType(), ddl.type);
       Assert.assertEquals(evt.getSchema(), ddl.schema);
       Assert.assertEquals(evt.getTable(), ddl.table);
-      Assert.assertEquals(evt.asDDL().getQuery(), ddl.query);
+      Assert.assertEquals(evt.asDdl().getQuery(), ddl.query);
       lastTs = evt.getTs();
     }
     Assert.assertEquals(idx, expected.length);
@@ -97,28 +96,28 @@ public class CraftDecoderTest {
     long lastTs = verifyDDL("ddl_0", -1,
         new Expect.DDL[]{
             new Expect.DDL(
-                DDLValue.Type.CREATE_SCHEMA,
+                DdlValue.Type.CREATE_SCHEMA,
                 "a",
                 null,
                 "create database a;")});
     lastTs = verifyDDL("ddl_1", lastTs,
         new Expect.DDL[]{
             new Expect.DDL(
-                DDLValue.Type.DROP_SCHEMA,
+                DdlValue.Type.DROP_SCHEMA,
                 "a",
                 null,
                 "drop database a;")});
     lastTs = verifyDDL("ddl_2", lastTs,
         new Expect.DDL[]{
             new Expect.DDL(
-                DDLValue.Type.CREATE_SCHEMA,
+                DdlValue.Type.CREATE_SCHEMA,
                 "a",
                 null,
                 "create database a;")});
     verifyDDL("ddl_3", lastTs,
         new Expect.DDL[]{
             new Expect.DDL(
-                DDLValue.Type.CREATE_TABLE,
+                DdlValue.Type.CREATE_TABLE,
                 "a",
                 "c",
                 "create table c(id int primary key);")});

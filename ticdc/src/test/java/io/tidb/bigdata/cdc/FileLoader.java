@@ -16,7 +16,6 @@
 
 package io.tidb.bigdata.cdc;
 
-import io.tidb.bigdata.cdc.craft.CraftCodec;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -25,16 +24,9 @@ import java.util.Arrays;
 import org.junit.Assert;
 
 public class FileLoader {
-  protected static String getFormat(final Codec codec) {
-    if (codec.getClass() == CraftCodec.class) {
-      return "craft";
-    }
-    return "json";
-  }
 
-  protected static FileWithCodec getFile(final Codec codec, final String path,
+  protected static FileWithFormat getFile(final String format, final String path,
       boolean required) {
-    final String format = getFormat(codec);
     final URL url = FileLoader.class.getClassLoader().getResource(format + "/" + path);
     if (required) {
       Assert.assertNotNull(url);
@@ -42,71 +34,90 @@ public class FileLoader {
     if (url == null) {
       return null;
     }
-    return new FileWithCodec(codec, new File(url.getFile()));
+    return new FileWithFormat(format, new File(url.getFile()));
   }
 
-  protected static File[] listFiles(final Codec codec, final String path) {
-    return getFile(codec, path, true).listFiles();
+  protected static File[] listFiles(final String format, final String path) {
+    return getFile(format, path, true).listFiles();
   }
 
-  protected static FileWithCodec[] listFilesWithFormat(final Codec codec, final String path) {
-    return getFile(codec, path, true).listFilesWithFormat();
+  protected static FileWithFormat[] listFilesWithFormat(final String format, final String path) {
+    return getFile(format, path, true).listFilesWithFormat();
   }
 
-  protected static byte[] getFileContent(final FileWithCodec file) throws IOException {
-    if (file == null) {
-      return null;
-    }
+  protected static byte[] getFileContent(final FileWithFormat file) throws IOException {
     return Files.readAllBytes(file.file.toPath());
   }
 
-  protected static EventDecoder decode(final Codec codec, final String fileName)
+  protected static EventDecoder decode(final String format, final String fileName)
       throws IOException {
-    return decode(codec, getFile(codec, "key/" + fileName, false),
-        getFile(codec, "value/" + fileName, true));
+    return decode(getFile(format, "key/" + fileName, false),
+        getFile(format, "value/" + fileName, true));
   }
 
-  protected static EventDecoder decode(final Codec codec,
-      final FileWithCodec key, final FileWithCodec value)
+  protected static EventDecoder decode(final FileWithFormat key, final FileWithFormat value)
       throws IOException {
-    return codec.decode(getFileContent(key), getFileContent(value));
+    switch (value.format) {
+      case "json":
+        return EventDecoder
+            .json(getFileContent(key), getFileContent(value), ParserFactory.json());
+      case "craft":
+        return EventDecoder
+            .craft(getFileContent(value), ParserFactory.craft());
+      default:
+        throw new RuntimeException("Unknown format" + key.format);
+    }
   }
 
-  protected static EventDecoder decode(final Codec codec, final File key, final File value)
+  protected static EventDecoder decode(final String format, final File key, final File value)
       throws IOException {
-    return decode(codec, new FileWithCodec(codec, key), new FileWithCodec(codec, value));
+    return decode(new FileWithFormat(format, key), new FileWithFormat(format, value));
   }
 
-  protected static KeyDecoder decodeKey(final Codec codec, final String key) throws IOException {
-    return decodeKey(getFile(codec, "key/" + key, true));
+  protected static KeyDecoder decodeKey(final String format, final String key) throws IOException {
+    return decodeKey(getFile(format, "key/" + key, true));
   }
 
-  protected static KeyDecoder decodeKey(final FileWithCodec key) throws IOException {
-    return key.codec.key(getFileContent(key));
+  protected static KeyDecoder decodeKey(final FileWithFormat key) throws IOException {
+    switch (key.format) {
+      case "json":
+        return KeyDecoder.json(getFileContent(key), ParserFactory.json());
+      case "craft":
+        return KeyDecoder.craft(getFileContent(key), ParserFactory.craft());
+      default:
+        throw new RuntimeException("Not supported key decoder format: " + key.format);
+    }
   }
 
-  protected static ValueDecoder decodeValue(final Codec codec, final String value)
+  protected static ValueDecoder decodeValue(final String format, final String value)
       throws IOException {
-    return decodeValue(getFile(codec, "value/" + value, true));
+    return decodeValue(getFile(format, "value/" + value, true));
   }
 
-  protected static ValueDecoder decodeValue(final FileWithCodec value) throws IOException {
-    return value.codec.value(getFileContent(value));
+  protected static ValueDecoder decodeValue(final FileWithFormat value) throws IOException {
+    switch (value.format) {
+      case "json":
+        return ValueDecoder.json(getFileContent(value), ParserFactory.json());
+      case "craft":
+        return ValueDecoder.craft(getFileContent(value), ParserFactory.craft());
+      default:
+        throw new RuntimeException("Not supported value decoder format: " + value.format);
+    }
   }
 
-  private static class FileWithCodec {
+  private static class FileWithFormat {
 
-    private final File file;
-    private final Codec codec;
+    private File file;
+    private String format;
 
-    private FileWithCodec(Codec codec, File file) {
-      this.codec = codec;
+    private FileWithFormat(String format, File file) {
+      this.format = format;
       this.file = file;
     }
 
-    private FileWithCodec[] listFilesWithFormat() {
-      return Arrays.stream(listFiles()).map(f -> new FileWithCodec(codec, f))
-          .toArray(FileWithCodec[]::new);
+    private FileWithFormat[] listFilesWithFormat() {
+      return Arrays.stream(listFiles()).map(f -> new FileWithFormat(format, f))
+          .toArray(FileWithFormat[]::new);
     }
 
     private File[] listFiles() {
