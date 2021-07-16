@@ -56,6 +56,7 @@ public class TiDBDynamicTableSource implements ScanTableSource, LookupTableSourc
     return changelogMode;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public ScanRuntimeProvider getScanRuntimeProvider(ScanContext scanContext) {
     /* Disable metadata as it doesn't work with projection push down at this time */

@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.function.Function;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;
+import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.connector.base.source.hybrid.HybridSource;
 import org.apache.flink.table.catalog.ResolvedCatalogTable;
 import org.apache.flink.table.data.RowData;
@@ -53,8 +54,9 @@ public class TiDBSourceBuilder implements Serializable {
   private final TiDBSchemaAdapter schema;
 
   public TiDBSourceBuilder(ResolvedCatalogTable table,
-      Function<DataType, TypeInformation<RowData>> typeInfoFactory,
-      TiDBMetadata[] metadata, int[] projectedFields) {
+                           Function<DataType, TypeInformation<RowData>> typeInfoFactory,
+                           TiDBMetadata[] metadata,
+                           int[] projectedFields) {
     schema = new TiDBSchemaAdapter(table, typeInfoFactory, metadata, projectedFields);
     setProperties(table.getOptions());
   }
@@ -107,8 +109,16 @@ public class TiDBSourceBuilder implements Serializable {
           "Only kafka is supported as streaming source at this time");
     }
   }
-
-  public HybridSource<RowData> build() {
+  
+  public Source build() {
+    return streamingSource == null ? buildSnapshotSource() : buildHybridSource();
+  }
+  
+  private SnapshotSource buildSnapshotSource() {
+    return new SnapshotSource(databaseName, tableName, properties, schema);
+  }
+  
+  private HybridSource<RowData> buildHybridSource() {
     final SnapshotSource source = new SnapshotSource(databaseName, tableName, properties, schema);
     HybridSource.HybridSourceBuilder<RowData, TiDBSourceSplitEnumerator> builder =
         HybridSource.builder(source);
@@ -130,4 +140,5 @@ public class TiDBSourceBuilder implements Serializable {
     }
     return builder.build();
   }
+  
 }
